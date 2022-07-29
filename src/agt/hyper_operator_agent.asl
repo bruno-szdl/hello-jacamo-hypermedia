@@ -19,7 +19,16 @@ env_url("http://192.168.15.8:8080/environments/smartbuilding/").
   start;
   !load_environment("smartbuilding", Url);
   .wait(2000);
-  .print("finished loading the environment").
+  .print("finished loading the environment")
+  !switchOnLights.
+
++!switchOnLights
+  <- .print("Switching on lights");
+  invokeAction("https://w3id.org/saref#ToggleCommand", ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name("lightbulb1")];
+  invokeAction("https://w3id.org/saref#ToggleCommand", ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name("lightbulb2")];
+  invokeAction("https://w3id.org/saref#ToggleCommand", ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name("lightbulb3")];
+  invokeAction("https://w3id.org/saref#ToggleCommand", ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name("lightbulb4")];
+  .print("Switched on lights!").
 
 { include("inc/hypermedia.asl") }
 { include("$jacamoJar/templates/common-cartago.asl") }
