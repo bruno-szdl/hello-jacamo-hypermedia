@@ -1,19 +1,7 @@
 /* Initial beliefs and rules */
 
-env_url("http://192.168.15.6:8080/environments/smartbuilding/").
-
-//Pretending the agent read the .ttls and find out the actions afforded by the lightbulbs
-hasAction("lightbulb1", "https://w3id.org/saref#ToggleCommand").
-hasAction("lightbulb2", "https://w3id.org/saref#ToggleCommand").
-hasAction("lightbulb3", "https://raw.githubusercontent.com/bruno-szdl/example_ont_companies/main/companyA.owl#toggleLight").
-hasAction("lightbulb4", "https://raw.githubusercontent.com/bruno-szdl/example_ont_companies/main/companyB.owl#lightToggle").
-
-//The agent can say that an action is equivalent to itself
-is_equivalent("https://w3id.org/saref#ToggleCommand", "https://w3id.org/saref#ToggleCommand").
-
-//Pretending the agent consulted the ontology and found out that Toggle Command subsumes toggleLight and lightToggle
-subsumes("https://w3id.org/saref#ToggleCommand", "https://raw.githubusercontent.com/bruno-szdl/example_ont_companies/main/companyA.owl#toggleLight").
-subsumes("https://w3id.org/saref#ToggleCommand", "https://raw.githubusercontent.com/bruno-szdl/example_ont_companies/main/companyB.owl#lightToggle").
+// URL of the smartbuilding
+env_url("http://192.168.15.7:8080/environments/smartbuilding/").
 
 !start.
 
@@ -21,40 +9,99 @@ subsumes("https://w3id.org/saref#ToggleCommand", "https://raw.githubusercontent.
 
 +!start
     :
-       env_url(Url)
-   <-
-       .print("hello world.");
-       makeArtifact("notification-server", "ch.unisg.ics.interactions.jacamo.artifacts.yggdrasil.NotificationServerArtifact", ["localhost", 8081], _);
-       !load_environment("smartbuilding", Url);
-       .wait(2000);
-       .print("finished loading the environment");
-       !switchOnLights;
-       .
+        env_url(Url)
+    <-
+        makeArtifact("notification-server", "ch.unisg.ics.interactions.jacamo.artifacts.yggdrasil.NotificationServerArtifact", ["localhost", 8081], _);
+        
+        // Loading environment
+        print("############# Loading environment #############\n");
+        !load_environment("smartbuilding", Url);
+        .wait(1000);
+        .print("[Load environment] Finished loading the environment \n\n");
 
-+!switchOnLights
-   <-
-       .print("Switching on lights");
-       !switchOnLight("lightbulb1", "https://w3id.org/saref#ToggleCommand");
-       !switchOnLight("lightbulb2", "https://w3id.org/saref#ToggleCommand");
-       !switchOnLight("lightbulb3", "https://w3id.org/saref#ToggleCommand");
-       !switchOnLight("lightbulb4", "https://w3id.org/saref#ToggleCommand");
-       .print("Switched on lights!");
-       .
+        // Loading ontologies
+        print("############# Loading ontologies #############\n");
+        !load_ontologies;
+        .wait(200);
+        .print("[Load Ontologies] Finished loading the ontologies \n\n");
 
-+!switchOnLight(Lightbulb, DesiredAction)
-   :
-       hasAction(Lightbulb, X)
-       & (subsumes(DesiredAction, X) | is_equivalent(DesiredAction, X))
-   <-
-       .print(Lightbulb, ": Executing action: ", X);
-       invokeAction(X, ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name(Lightbulb)]
-       .
+        // Getting subsumption relations between classes
+        print("############# Getting subsumption relations  #############\n");
+        !get_subsumption_relations;
+        .wait(200);
+        .print("[Get Subsumption relations] Finished getting subsumption relations \n\n");
 
-+!switchOnLight(Lightbulb, DesiredAction)
-   <-
-       .print(Lightbulb, ": No applicable action found");
-       .
+        // performing desired action
+        print("############# Trying to Switch on lights #############\n");
+        !performDesiredAction("LightSwitch", "https://saref.etsi.org/core#ToggleCommand", "meetingroom");
+
+        print("############# Trying to Switch on smarttv #############\n");
+        !performDesiredAction("Smarttv", "https://saref.etsi.org/core#ToggleCommand", "meetingroom");
+        .
+
+
++!performDesiredAction(ThingType, DesiredAction, WorkspaceName)
+    : 
+        .count(isOfType(_, ThingType), N)
+        & N > 0
+    <-
+        joinWorkspace(WorkspaceName, WorkspaceArtId);
+        .print("[PerformDesiredAction] Joining workspace: ", WorkspaceName);
+
+        .term2string(WorkspaceNameAtom, WorkspaceName);
+        .setof(
+            ThingNameAtom
+            , isOfType(_,ThingType)[_,artifact_name(_,ThingNameAtom),_,_,_]
+                & .term2string(ThingNameAtom, ThingName)
+                & artifact(_, ThingName)[_,_,_,_,workspace(_,WorkspaceNameAtom,_)]
+            , ThingNames);
+
+        for ( .member(ThingNameAtom, ThingNames) ) {
+            .term2string(ThingNameAtom, ThingName)
+            .print("\n[PerformDesiredAction] Toggling ", ThingType);
+            !performApplicableAction(ThingName, DesiredAction);
+        }
+        .print("\n[PerformDesiredAction] Switched on lights! \n\n");
+        .
+
++!performDesiredAction(ThingType, DesiredAction, WorkspaceName)
+    : 
+        true
+    <-
+        .print("[PerformDesiredAction] There is no thing of type ", ThingType);
+        .
+
+
++!performApplicableAction(ThingName, DesiredAction)
+    :
+        .term2string(ThingNameAtom, ThingName)
+        & hasAction(Ont, Action)[_,artifact_name(_,ThingNameAtom),_,_,_]
+        & .concat(Ont, "#", Action, ApplicableAction)
+        & ApplicableAction = DesiredAction
+    <-
+        .print("[PerformApplicableAction]", "Executing action '", ApplicableAction, "' in  '", ThingName);
+        invokeAction(ApplicableAction, ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name(ThingName)]
+        .
+
++!performApplicableAction(ThingName, DesiredAction)
+    : 
+        .term2string(ThingNameAtom, ThingName)
+        & hasAction(Ont, Action)[_,artifact_name(_,ThingNameAtom),_,_,_]
+        & .concat(Ont, "#", Action, ApplicableAction)
+        & isSubConceptOf(ApplicableAction, DesiredAction)
+    <-
+        .print("[PerformApplicableAction]", "Executing action '", ApplicableAction, "' in  '", ThingName);
+        invokeAction(ApplicableAction, ["https://www.w3.org/2019/wot/json-schema#BooleanSchema"], [true])[artifact_name(ThingName)]
+        .
+
++!performApplicableAction(ThingName, DesiredAction)
+    : 
+        true
+    <-
+        .print("[PerformApplicableAction]", ThingName, ": No action found for ", DesiredAction);
+        .
 
 { include("inc/hypermedia.asl") }
+{ include("inc/ontologies.asl") }
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }

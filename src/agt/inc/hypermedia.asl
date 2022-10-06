@@ -3,15 +3,16 @@
  */
 
 +!load_environment(EnvName, EnvUrl) : true <-
-  .print("Loading environment (entry point): ", EnvUrl);
+  .print("[Load environment] Loading environment (entry point): ", EnvUrl);
   makeArtifact(EnvName, "ch.unisg.ics.interactions.jacamo.artifacts.yggdrasil.ContainerArtifact", [EnvUrl, "workspace"], ArtId);
   focusWhenAvailable(EnvName);
   !registerForWebSub(EnvName, ArtId).
 
 /* Mirror hypermedia workspaces as local CArtAgO workspaces */
 
+@l13[atomic]
 +workspace(WorkspaceIRI, WorkspaceName) : true <-
-  .print("Discovered workspace (name: ", WorkspaceName ,"): ", WorkspaceIRI);
+  .print("[Load environment] Discovered workspace (name: ", WorkspaceName ,"): ", WorkspaceIRI);
   createWorkspace(WorkspaceName);
   joinWorkspace(WorkspaceName, WorkspaceArtId);
   // Create a hypermedia WorkspaceArtifact for this workspace.
@@ -22,8 +23,9 @@
 
 /* Mirror hypermedia artifacts in local CArtAgO workspaces */
 
-+artifact(ArtifactIRI, ArtifactName) : true <-
-  .print("Discovered artifact (name: ", ArtifactName ,"): ", ArtifactIRI);
++artifact(ArtifactIRI, ArtifactName): true <-
+  .print("[Load environment] Discovered artifact (name: ", ArtifactName ,"): ", ArtifactIRI);
+
   makeArtifact(ArtifactName, "ch.unisg.ics.interactions.jacamo.artifacts.wot.ThingArtifact", [ArtifactIRI, false], ArtID);
   focusWhenAvailable(ArtifactName);
   !registerForWebSub(ArtifactName, ArtID).
@@ -33,4 +35,4 @@
   registerArtifactForNotifications(TopicIRI, ArtID, HubIRI).
 
 -!registerForWebSub(ArtifactName, ArtID) : true <-
-  .print("WebSub not available for artifact: ", ArtifactName).
+  .print("[Load environment] WebSub not available for artifact: ", ArtifactName).

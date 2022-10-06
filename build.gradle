@@ -29,7 +29,9 @@ repositories {
 
 dependencies {
     implementation group: 'org.jacamo', name: 'jacamo', version: '0.9-SNAPSHOT'
-    implementation group: 'com.github.Interactions-HSG', name: 'jacamo-hypermedia', version: 'befc6bd'
+    //implementation group: 'com.github.Interactions-HSG', name: 'jacamo-hypermedia', version: 'befc6bd'
+    implementation group: 'com.github.bruno-szdl', name: 'jacamo-hypermedia', version: '57d8b9d'
+    implementation group: 'com.github.bruno-szdl', name: 'MasOntology', version: '425db4c'
 }
 
 sourceSets {
