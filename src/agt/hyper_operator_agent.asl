@@ -33,7 +33,7 @@ env_url("http://192.168.15.7:8080/environments/smartbuilding/").
 
         // performing desired action
         print("############# Trying to Switch on lights #############\n");
-        !performDesiredAction("LightSwitch", "https://saref.etsi.org/core#ToggleCommand", "meetingroom");
+        !performDesiredAction("LightSwitch", "https://saref.etsi.org/core#ToggleCommand", "workingroom");
 
         print("############# Trying to Switch on smarttv #############\n");
         !performDesiredAction("Smarttv", "https://saref.etsi.org/core#ToggleCommand", "meetingroom");
